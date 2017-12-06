@@ -59,9 +59,41 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
+	uint32_t *tebp = (uint32_t*)read_ebp();
+	uint32_t *ebp = 0;
+	uint32_t *saved_ebp = 0;
+	uint32_t *eip = (uint32_t*)mon_backtrace; 
+	uint32_t *arg = 0;
+	int       ret = 0;
+	int       i = 0;
+	
+	struct Eipdebuginfo info;
+
+	cprintf("Stack backtrace:\n");
+
+	ebp = (uint32_t*)read_ebp();
+	
+
+	for (; ebp ; ebp = saved_ebp) { 
+		saved_ebp  = (uint32_t*)(*ebp); 
+		debuginfo_eip((uintptr_t)eip, &info);
+		eip = (uint32_t*)(*(ebp+1));
+				
+		cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n", tebp, tebp[1], tebp[2], tebp[3],tebp[4], tebp[5], tebp[6]);
+		tebp=(uint32_t *)tebp[0];
+		//for(arg = ebp + 2, i = 0; i < info.eip_fn_narg; ++arg, ++i) {
+			//cprintf(" %08x", *arg); 
+		//}
+		cprintf("\n          %s:%d: %.*s+%u\n", 
+				info.eip_file, 
+				info.eip_line,
+				info.eip_fn_namelen,
+				info.eip_fn_name,
+				(uintptr_t)eip-info.eip_fn_addr
+				);
+	}
 	return 0;
 }
-
 
 
 /***** Kernel monitor command interpreter *****/
@@ -124,3 +156,6 @@ monitor(struct Trapframe *tf)
 				break;
 	}
 }
+
+
+
